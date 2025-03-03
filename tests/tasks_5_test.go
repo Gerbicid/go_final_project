@@ -31,7 +31,6 @@ func getTasks(t *testing.T, search string) []map[string]string {
 	}
 	body, err := requestJSON(url, nil, http.MethodGet)
 	assert.NoError(t, err)
-
 	var m map[string][]map[string]string
 	err = json.Unmarshal(body, &m)
 	assert.NoError(t, err)
@@ -45,9 +44,9 @@ func TestTasks(t *testing.T) {
 	now := time.Now()
 	_, err := db.Exec("DELETE FROM scheduler")
 	assert.NoError(t, err)
-
 	tasks := getTasks(t, "")
 	assert.NotNil(t, tasks)
+
 	assert.Empty(t, tasks)
 
 	addTask(t, task{

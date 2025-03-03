@@ -27,7 +27,6 @@ func requestJSON(apipath string, values map[string]any, method string) ([]byte, 
 		}
 	}
 	var resp *http.Response
-
 	req, err := http.NewRequest(method, getURL(apipath), bytes.NewBuffer(data))
 	if err != nil {
 		return nil, err
@@ -138,6 +137,7 @@ func TestAddTask(t *testing.T) {
 
 			err = db.Get(&task, `SELECT * FROM scheduler WHERE id=?`, id)
 			assert.NoError(t, err)
+
 			assert.Equal(t, id, strconv.FormatInt(task.ID, 10))
 
 			assert.Equal(t, v.title, task.Title)
