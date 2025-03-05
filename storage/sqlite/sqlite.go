@@ -78,13 +78,13 @@ func (s *Storage) AddTask(date string, title string, comment string, repeat stri
 
 }
 
-func (s Storage) GetTasks(NumberOfOutPutTasks int) ([]handlers.Task, error) {
+func (s Storage) GetTasks(limit int) ([]handlers.Task, error) {
 	var tasks []handlers.Task
-	stmt, err := s.db.Prepare("SELECT * FROM scheduler ORDER BY date LIMIT ? ")
+	stmt, err := s.db.Prepare("SELECT id, date, title, comment, repeat FROM scheduler ORDER BY date LIMIT ?")
 	if err != nil {
 		return nil, fmt.Errorf("failed to create a request for select from database: %w", err)
 	}
-	rows, err := stmt.Query(NumberOfOutPutTasks)
+	rows, err := stmt.Query(limit)
 	if err != nil {
 		return nil, fmt.Errorf("failed request for select from database: %w", err)
 	}
@@ -98,15 +98,13 @@ func (s Storage) GetTasks(NumberOfOutPutTasks int) ([]handlers.Task, error) {
 		}
 		tasks = append(tasks, task)
 	}
-	err = rows.Err()
-	if err != nil {
+	if err = rows.Err(); err != nil {
 		return nil, fmt.Errorf("rows.Next() contains errors: %w", err)
 	}
 	return tasks, nil
 }
-
 func (s Storage) GetTask(id string) (handlers.Task, error) {
-	stmt, err := s.db.Prepare("SELECT * FROM scheduler WHERE id =? ")
+	stmt, err := s.db.Prepare("SELECT id, date, title, comment, repeat FROM scheduler WHERE id = ?")
 	if err != nil {
 		return handlers.Task{}, fmt.Errorf("failed to create a request for select from database: %w", err)
 	}
@@ -123,11 +121,11 @@ func (s Storage) GetTask(id string) (handlers.Task, error) {
 			return handlers.Task{}, fmt.Errorf("failed scan from database: %w", err)
 		}
 	}
-	if err != nil {
+	if err = rows.Err(); err != nil {
 		return handlers.Task{}, fmt.Errorf("rows.Next() contains errors: %w", err)
 	}
 	if task.ID == "" {
-		return handlers.Task{}, fmt.Errorf("database query not found: %w", err)
+		return handlers.Task{}, fmt.Errorf("database query not found")
 	}
 	return task, nil
 }
@@ -189,21 +187,20 @@ func (s Storage) UpdateDateTask(idTask string, newDateString string) error {
 	return nil
 }
 
-func (s Storage) SearchTasks(code int, searchQuery string, NumberOfOutPutTasks int) ([]handlers.Task, error) {
+func (s Storage) SearchTasks(code int, searchQuery string, limited int) ([]handlers.Task, error) {
 	var tasks []handlers.Task
 	switch code {
 	case handlers.DateSearch:
 		date, err := time.Parse("02.01.2006", searchQuery)
 		if err != nil {
-			return nil, fmt.Errorf("error in date conversion in the searsh function. package sqlite: %w", err)
+			return nil, fmt.Errorf("error in date conversion in the search function. package sqlite: %w", err)
 		}
 
-		stmt, err := s.db.Prepare("SELECT * FROM scheduler WHERE date = ? LIMIT ?")
-
+		stmt, err := s.db.Prepare("SELECT id, date, title, comment, repeat FROM scheduler WHERE date = ? LIMIT ?")
 		if err != nil {
 			return nil, fmt.Errorf("failed to create a request for select from database: %w", err)
 		}
-		rows, err := stmt.Query(date.Format("20060102"), NumberOfOutPutTasks)
+		rows, err := stmt.Query(date.Format("20060102"), limited)
 		if err != nil {
 			return nil, fmt.Errorf("failed request for select from database: %w", err)
 		}
@@ -215,17 +212,17 @@ func (s Storage) SearchTasks(code int, searchQuery string, NumberOfOutPutTasks i
 			}
 			tasks = append(tasks, task)
 		}
-		if err != nil {
+		if err = rows.Err(); err != nil {
 			return nil, fmt.Errorf("rows.Next() contains errors: %w", err)
 		}
 		defer rows.Close()
 
 	case handlers.TextSearch:
-		stmt, err := s.db.Prepare("SELECT * FROM scheduler WHERE title LIKE ? OR comment LIKE ? ORDER BY date LIMIT ?")
+		stmt, err := s.db.Prepare("SELECT id, date, title, comment, repeat FROM scheduler WHERE title LIKE ? OR comment LIKE ? ORDER BY date LIMIT ?")
 		if err != nil {
 			return nil, fmt.Errorf("failed to create a request for select from database: %w", err)
 		}
-		rows, err := stmt.Query("%"+searchQuery+"%", "%"+searchQuery+"%", NumberOfOutPutTasks)
+		rows, err := stmt.Query("%"+searchQuery+"%", "%"+searchQuery+"%", limited)
 		if err != nil {
 			return nil, fmt.Errorf("failed request for select from database: %w", err)
 		}
@@ -237,10 +234,9 @@ func (s Storage) SearchTasks(code int, searchQuery string, NumberOfOutPutTasks i
 			}
 			tasks = append(tasks, task)
 		}
-		if err != nil {
+		if err = rows.Err(); err != nil {
 			return nil, fmt.Errorf("rows.Next() contains errors: %w", err)
 		}
-
 	}
 	return tasks, nil
 }

@@ -304,7 +304,8 @@ func DoneTask(serverJob ServerJob) http.HandlerFunc {
 				http_server.ResponseJson("api.NextDate Error", http.StatusInternalServerError, err, w)
 				return
 			}
-			err = serverJob.UpdateDateTask(idDone, newDateString)
+			task.Date = newDateString
+			err = serverJob.UpdateTask(task)
 			if err != nil {
 				http_server.ResponseJson("data update error", http.StatusInternalServerError, err, w)
 				return

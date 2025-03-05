@@ -7,11 +7,14 @@ import (
 	"time"
 )
 
+// Глобальная константа для формата даты
+const dateFormat = "20060102"
+
 func NextDate(now time.Time, date string, repeat string) (string, error) {
 	if repeat == "" {
 		return "", nil
 	}
-	dateTask, err := time.Parse("20060102", date)
+	dateTask, err := time.Parse(dateFormat, date)
 	if err != nil {
 		return "", fmt.Errorf("failed to convert string to date: %w", err)
 	}
@@ -149,7 +152,7 @@ func NextDate(now time.Time, date string, repeat string) (string, error) {
 
 	}
 
-	return dateAnswer.Format("20060102"), nil
+	return dateAnswer.Format(dateFormat), nil
 }
 
 func convertToIntAndCheck(num string) (int, error) {

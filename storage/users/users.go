@@ -3,18 +3,32 @@ package users
 import (
 	"fmt"
 	"os"
+	"sync"
+)
+
+var (
+	password string
+	once     sync.Once
 )
 
 type User struct {
 	PasswordString string `json:"password,omitempty"`
 }
 
-func (u User) GetPasswordFromEnv() (string, error) {
-	passwordEnv := os.Getenv("TODO_PASSWORD")
-	if passwordEnv == "" {
-		return "", fmt.Errorf("the password value is empty in the .env file is empty.")
+func initPassword() {
+	var ok bool
+	password, ok = os.LookupEnv("TODO_PASSWORD")
+	if !ok {
+		panic("TODO_PASSWORD environment variable not set")
 	}
-	return passwordEnv, nil
+}
+
+func (u User) GetPasswordFromEnv() (string, error) {
+	once.Do(initPassword)
+	if password == "" {
+		return "", fmt.Errorf("the password value is empty in the .env file")
+	}
+	return password, nil
 }
 
 func (u User) GetPassword() string {

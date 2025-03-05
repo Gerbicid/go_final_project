@@ -21,6 +21,6 @@ COPY --from=build /app/web ./web
 COPY --from=build /app/.env ./
 
 
-EXPOSE 7540
+# EXPOSE 7540 сделаем через Docker Compose 
 
 CMD ["./go_final_project"]

@@ -7,6 +7,7 @@ import (
 	"log"
 	"net/http"
 	"os"
+	"strconv"
 
 	"github.com/go-chi/chi/v5"
 	_ "github.com/jackc/pgx"
@@ -16,21 +17,25 @@ import (
 )
 
 func main() {
-	// use the godotenv library to load the project root environment variables
+	// Используем библиотеку godotenv для загрузки переменных окружения
 	err := godotenv.Load(".env")
 	if err != nil {
 		log.Fatalf("Error loading .env file: %w", err)
 	}
-	var port string = os.Getenv("TODO_PORT")
-	var DBFile = os.Getenv("TODO_DBFILE")
-	var NumberOfOuptuTasks = os.Getenv("NUMNER_OF_OUTPUT_TASKS")
+
+	port := os.Getenv("TODO_PORT")
+	DBFile := os.Getenv("TODO_DBFILE")
+
+	// Используем константу для количества выводимых задач
+	const NumberOfOutPutTasks = 10
 
 	storage, err := sqlite.New(DBFile)
+	if err != nil {
+		log.Fatalf("Error initializing storage: %w", err)
+	}
 	defer storage.Close()
 
 	server := chi.NewRouter()
-	// Basic Handler Description. Middleware authorization.CheckToken is used to check the JWT token
-	// The token is generated during user authorization.
 	server.Handle("/*", http.FileServer(http.Dir("web")))
 	server.HandleFunc("/api/nextdate", handlers.ApiNextDate)
 	server.Post("/api/task", authorization.CheckToken(handlers.PostTask(storage)))
@@ -38,7 +43,9 @@ func main() {
 	server.Put("/api/task", authorization.CheckToken(handlers.CorrectTask(storage)))
 	server.Post("/api/task/done", authorization.CheckToken(handlers.DoneTask(storage)))
 	server.Delete("/api/task", authorization.CheckToken(handlers.DeleteTask(storage)))
-	server.Get("/api/tasks", authorization.CheckToken(handlers.GetTasks(storage, NumberOfOuptuTasks)))
+
+	NumberOfOutPutTasksStr := strconv.Itoa(NumberOfOutPutTasks)
+	server.Get("/api/tasks", authorization.CheckToken(handlers.GetTasks(storage, NumberOfOutPutTasksStr)))
 	server.Post("/api/signin", authorization.Authorization)
 
 	log.Printf("Starting server on :%s\n", port)
@@ -46,5 +53,4 @@ func main() {
 	if err != nil {
 		log.Fatalf("server startup error: %w", err)
 	}
-
 }
